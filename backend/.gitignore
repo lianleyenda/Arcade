@@ -1,0 +1,20 @@
+# Entorno virtual
+venv/
+env/
+ENV/
+
+# Archivos y base de datos de PocketBase
+pb_data/
+pocketbase.exe
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Variables de entorno secretas (si usas .env más adelante)
+.env
+
+# Archivos de configuración de VS Code / IDEs
+.vscode/
+.idea/
