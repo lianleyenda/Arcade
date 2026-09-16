@@ -18,3 +18,5 @@ __pycache__/
 # Archivos de configuración de VS Code / IDEs
 .vscode/
 .idea/
+
+.env

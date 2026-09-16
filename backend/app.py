@@ -1,57 +1,129 @@
 import datetime
+import os
 import requests
+from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-POCKETBASE_URL = "http://127.0.0.1:8090/api/collections"
+# Configuración de URLs
+POCKETBASE_URL = "http://127.0.0.1:8090/api"
+ADMIN_EMAIL = os.getenv("mail_admin")
+ADMIN_PASSWORD = os.getenv("passwor_admin")
+
+# Variable global para guardar el token en memoria
+token_actual = None
 
 
-# -------------------------------------------------------------------
-# 1. REGISTROS (FRONTEND WEB)
-# -------------------------------------------------------------------
+def obtener_token():
+    global token_actual
+
+    if token_actual:
+        return token_actual
+
+    url = f"{POCKETBASE_URL}/collections/_superusers/auth-with-password"
+
+    res = requests.post(url, json={
+        "identity": ADMIN_EMAIL,
+        "password": ADMIN_PASSWORD
+    })
+
+    if res.status_code == 200:
+        token_actual = res.json().get("token")
+        return token_actual
+
+    raise Exception(
+        f"No se pudo autenticar. "
+        f"Respuesta: {res.status_code} - {res.text}"
+    )
 
 @app.route("/api/registrar-estudiante", methods=["POST"])
 def registrar_estudiante():
-    datos = request.get_json()
+    global token_actual
+    datos = request.get_json() or {}
     nombre = datos.get("nombre")
     apellido = datos.get("apellido")
     email = datos.get("email")
-    password = datos.get("password")    
-    saldo_inicial = datos.get("saldo", 0)
+    password = datos.get("password")
 
     if not password or not email:
         return jsonify({"error": "Email y contraseña son requeridos"}), 400
 
+    # 1. Obtenemos el token usando la función con fallback
+    try:
+        token = obtener_token()
+    except Exception as e:
+        return jsonify({"error": "Error de autenticación admin", "detalle": str(e)}), 500
+
+    headers = {"Authorization": f"Bearer {token}"}
     password_encriptada = generate_password_hash(password)
 
-    # Paso 1: Crear Persona
+    # 2. Paso 1: Crear Persona
     res_persona = requests.post(
-        f"{POCKETBASE_URL}/Personas/records",
-        json={"nombre": nombre, "apellido": apellido}
+        f"{POCKETBASE_URL}/collections/Personas/records",
+        json={"nombre": nombre, "apellido": apellido},
+        headers=headers
     )
-    if res_persona.status_code != 200:
-        return jsonify({"error": "No se pudo registrar la persona"}), 400
+
+    # Si el token caducó (401/403), reintentamos renovando token
+    if res_persona.status_code in [401, 403]:
+        token_actual = None
+        try:
+            token = obtener_token()
+            headers = {"Authorization": f"Bearer {token}"}
+            res_persona = requests.post(
+                f"{POCKETBASE_URL}/collections/Personas/records",
+                json={"nombre": nombre, "apellido": apellido},
+                headers=headers
+            )
+        except Exception as e:
+            return jsonify({"error": "Error al renovar token", "detalle": str(e)}), 500
+
+    if res_persona.status_code not in [200, 201]:
+     return jsonify({
+        "error": "No se pudo registrar la persona",
+        "detalles": res_persona.json()
+    }), 400
 
     persona_id = res_persona.json()["id"]
 
-    # Paso 2: Crear Estudiante
+     # 3. Paso 2: Crear Estudiante
     res_estudiante = requests.post(
-        f"{POCKETBASE_URL}/Estudiantes/records",
+        f"{POCKETBASE_URL}/collections/Estudiantes/records",
         json={
             "email": email,
             "password": password_encriptada,
-            "saldo": saldo_inicial,
-            "id_personas": persona_id 
-        }
+            "id_personas": persona_id
+        },
+        headers=headers
     )
-    if res_estudiante.status_code != 200:
-        return jsonify({"error": "No se pudo registrar el estudiante"}), 400
 
-    return jsonify({"status": "éxito", "estudiante": res_estudiante.json()}), 201
+    print("STATUS ESTUDIANTE:", res_estudiante.status_code)
+    print("RESPUESTA ESTUDIANTE:", res_estudiante.text)
+
+    # PocketBase creó correctamente el registro
+    if res_estudiante.status_code in [200, 201]:
+        return jsonify({
+            "status": "éxito",
+            "estudiante": res_estudiante.json()
+        }), 201
+
+    # Si realmente hubo un error
+    try:
+        detalles = res_estudiante.json()
+    except:
+        detalles = res_estudiante.text
+
+    return jsonify({
+        "error": "No se pudo registrar el estudiante",
+        "status_pocketbase": res_estudiante.status_code,
+        "detalles": detalles
+    }), 400
 
 
 @app.route("/api/registrar-profesor", methods=["POST"])
