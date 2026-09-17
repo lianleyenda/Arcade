@@ -24,7 +24,7 @@ app = Flask(__name__)
 CORS(app)
 
 # URL de PocketBase
-POCKETBASE_URL = "http://127.0.0.1:8090/api"
+POCKETBASE_URL = "http://10.56.31.32:8090/api"
 
 # Credenciales del administrador de PocketBase
 ADMIN_EMAIL = os.getenv("mail_admin")
