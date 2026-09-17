@@ -13,7 +13,7 @@ Servidor backend en Python con Flask y PocketBase para la gestión de usuarios, 
 
 ---
 
-## 🛠️ Tecnologías
+## Tecnologías
 
 - Python 3.x
 - Flask / Flask-CORS
@@ -21,17 +21,19 @@ Servidor backend en Python con Flask y PocketBase para la gestión de usuarios, 
 
 ---
 
-## 🚀 Pasos para arrancar el proyecto
+##  Pasos para arrancar el proyecto
 
 Abre **dos terminales en PowerShell** dentro de la carpeta `backend`:
 
-### Terminal 1: Iniciar Base de Datos (PocketBase)
+
+
+ Terminal 1: Iniciar Base de Datos (PocketBase)
 
 ```powershell
 .\pocketbase.exe serve
 
 
-### Terminal 2: Iniciar Backend
+ Terminal 2: Iniciar Backend
    
    ```powershell
    1. Clonar el repositorio y entrar a la carpeta
@@ -58,7 +60,17 @@ Se ejecutará en: http://127.0.0.1:8090
 Terminal 2: Servidor API Backend (Flask)
 PowerShell
 python app.py
-  
+
+ 
+ # Configuración Previa (.env)
+
+En la carpeta de `backend` deberás crear un archivo `.env` que contenga:
+
+```env
+mail_admin="tu-mail-de-super-user"
+passwor_admin="contraseña"  
+ 
+
 
 
  
