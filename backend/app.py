@@ -811,16 +811,16 @@ def iniciar_sesion_estudiante():
     # 4. Verificar saldo
     # ========================================================
 
-    #saldo_actual = int(estudiante.get("saldo") or 0)
+    saldo_actual = int(estudiante.get("saldo_segundos") or 0)
 
-    #if saldo_actual <= 0:
+    if saldo_actual <= 0:
 
-     #return jsonify({
-      #  "error": (
-       #     "No tienes saldo disponible "
-        #    "para jugar"
-        #)
-   # }), 403
+     return jsonify({
+        "error": (
+            "No tienes saldo disponible "
+            "para jugar"
+        )
+    }), 403
     # ========================================================
     # 5. Actualizar última fecha de uso
     # ========================================================
@@ -870,7 +870,7 @@ def iniciar_sesion_estudiante():
             "email": estudiante["email"],
             "nombre": persona.get("nombre"),
             "apellido": persona.get("apellido"),
-           # "saldo_minutos": saldo_actual,
+            "saldo_segundos": saldo_actual,
             "rol": "estudiante"
         }
     }), 200
@@ -890,19 +890,19 @@ def iniciar_sesion_estudiante():
 def descontar_tiempo():
 
     # ========================================================
-    # 1. Obtener datos enviados
+    # 1. Obtener datos enviados (el tiempo viene en SEGUNDOS)
     # ========================================================
 
     datos = request.get_json()
 
-    minutos_jugados = datos.get(
-        "minutos_jugados"
+    segundos_jugados = datos.get(
+        "segundos_jugados"
     )
 
-    if minutos_jugados is None:
+    if segundos_jugados is None:
 
         return jsonify({
-            "error": "Los minutos jugados son requeridos"
+            "error": "Los segundos jugados son requeridos"
         }), 400
 
     # ========================================================
@@ -978,37 +978,37 @@ def descontar_tiempo():
         }), 404
 
     # ========================================================
-    # 5. Obtener saldo actual
+    # 5. Obtener saldo actual (en segundos)
     # ========================================================
 
     saldo_actual = int(
-        res_estudiante.json().get("saldo") or 0
+        res_estudiante.json().get("saldo_segundos") or 0
     )
 
     # ========================================================
-    # 6. Convertir minutos jugados
+    # 6. Convertir segundos jugados
     # ========================================================
 
     try:
 
-        minutos_jugados = int(
-            minutos_jugados
+        segundos_jugados = int(
+            round(float(segundos_jugados))
         )
 
     except (ValueError, TypeError):
 
         return jsonify({
             "error": (
-                "Los minutos jugados "
+                "Los segundos jugados "
                 "deben ser un número"
             )
         }), 400
 
-    if minutos_jugados < 0:
+    if segundos_jugados < 0:
 
         return jsonify({
             "error": (
-                "Los minutos jugados "
+                "Los segundos jugados "
                 "no pueden ser negativos"
             )
         }), 400
@@ -1019,7 +1019,7 @@ def descontar_tiempo():
 
     nuevo_saldo = max(
         0,
-        saldo_actual - minutos_jugados
+        saldo_actual - segundos_jugados
     )
 
     # ========================================================
@@ -1032,7 +1032,7 @@ def descontar_tiempo():
             f"{POCKETBASE_URL}/collections/Estudiantes/records/"
             f"{estudiante_id}",
             json={
-                "saldo": nuevo_saldo
+                "saldo_segundos": nuevo_saldo
             },
             headers=headers
         )
@@ -1071,16 +1071,15 @@ def descontar_tiempo():
         }), 500
 
     # ========================================================
-    # 9. Respuesta final
+    # 9. Respuesta final (todo en segundos)
     # ========================================================
 
     return jsonify({
         "status": "éxito",
         "saldo_anterior": saldo_actual,
-        "minutos_jugados": minutos_jugados,
+        "segundos_jugados": segundos_jugados,
         "saldo_restante": nuevo_saldo
     }), 200
-
 
 # ============================================================
 # OBTENER ESTUDIANTES Y SALDO
@@ -1196,7 +1195,7 @@ def obtener_estudiantes_saldo():
         # PocketBase puede devolver saldo como:
         # "15", 15, "", None, etc.
         saldo = int(
-            est.get("saldo") or 0
+            est.get("saldo_segundos") or 0
         )
 
         estudiante = {
@@ -1238,87 +1237,51 @@ def obtener_estudiantes_saldo():
 # RECARGAR SALDO DE UN ESTUDIANTE
 # SOLO PROFESORES
 # ============================================================
-
 @app.route("/api/profesor/recargar-saldo", methods=["POST"])
 @requiere_rol("profesor")
 def recargar_saldo():
 
     # ========================================================
-    # 1. Obtener datos enviados
+    # 1. Obtener datos enviados (el tiempo viene en SEGUNDOS,
+    #    la pantalla ya hizo la cuenta de horas y minutos)
     # ========================================================
 
     datos = request.get_json()
 
     estudiante_id = datos.get("estudiante_id")
-    cantidad = datos.get("cantidad")
-    unidad = datos.get("unidad")
+    segundos = datos.get("segundos")
 
     if estudiante_id is None:
         return jsonify({
             "error": "El ID del estudiante es requerido"
         }), 400
 
-    if cantidad is None:
+    if segundos is None:
         return jsonify({
-            "error": "La cantidad de tiempo es requerida"
-        }), 400
-
-    if unidad is None:
-        return jsonify({
-            "error": (
-                "La unidad de tiempo es requerida "
-                "(segundos, minutos u horas)"
-            )
+            "error": "Los segundos a asignar son requeridos"
         }), 400
 
     # ========================================================
-    # 2. Validar cantidad
+    # 2. Validar segundos
     # ========================================================
 
     try:
-        cantidad = float(cantidad)
+        segundos = int(round(float(segundos)))
 
     except (ValueError, TypeError):
 
         return jsonify({
-            "error": "La cantidad debe ser un número"
+            "error": "Los segundos deben ser un número"
         }), 400
 
-    if cantidad <= 0:
+    if segundos <= 0:
 
         return jsonify({
-            "error": "La cantidad debe ser mayor a 0"
+            "error": "Los segundos deben ser mayores a 0"
         }), 400
 
     # ========================================================
-    # 3. Convertir a minutos
-    # ========================================================
-
-    unidad = unidad.lower().strip()
-
-    if unidad in ["segundo", "segundos", "s"]:
-
-        minutos_agregados = cantidad / 60
-
-    elif unidad in ["minuto", "minutos", "m"]:
-
-        minutos_agregados = cantidad
-
-    elif unidad in ["hora", "horas", "h"]:
-
-        minutos_agregados = cantidad * 60
-
-    else:
-
-        return jsonify({
-            "error": (
-                "Unidad inválida. "
-                "Usa segundos, minutos u horas"
-            )
-        }), 400
-
-    # ========================================================
-    # 4. Obtener token de superusuario de PocketBase
+    # 3. Obtener token de superusuario de PocketBase
     # ========================================================
 
     try:
@@ -1337,7 +1300,7 @@ def recargar_saldo():
     }
 
     # ========================================================
-    # 5. Buscar estudiante
+    # 4. Buscar estudiante
     # ========================================================
 
     res_estudiante = requests.get(
@@ -1367,31 +1330,28 @@ def recargar_saldo():
     estudiante = res_estudiante.json()
 
     # ========================================================
-    # 6. Obtener saldo actual
+    # 5. Obtener saldo actual (en segundos)
     # ========================================================
 
-    saldo_actual = float(
-        estudiante.get("saldo") or 0
+    saldo_actual = int(
+        estudiante.get("saldo_segundos") or 0
     )
 
     # ========================================================
-    # 7. Calcular nuevo saldo
+    # 6. Calcular nuevo saldo
     # ========================================================
 
-    nuevo_saldo = (
-        saldo_actual + minutos_agregados
-    )
+    nuevo_saldo = saldo_actual + segundos
 
     # ========================================================
-    # 8. Actualizar saldo y unidad
+    # 7. Actualizar saldo y unidad
     # ========================================================
 
     res_patch = requests.patch(
         f"{POCKETBASE_URL}/collections/Estudiantes/records/"
         f"{estudiante_id}",
         json={
-            "saldo": nuevo_saldo,
-            "unidad": "minutos"
+            "saldo_segundos": nuevo_saldo
         },
         headers=headers
     )
@@ -1418,20 +1378,99 @@ def recargar_saldo():
         }), 500
 
     # ========================================================
-    # 9. Respuesta
+    # 8. Respuesta (todo en segundos)
     # ========================================================
 
     return jsonify({
         "status": "éxito",
         "estudiante_id": estudiante_id,
         "saldo_anterior": saldo_actual,
-        "tiempo_agregado": cantidad,
-        "unidad_ingresada": unidad,
-        "minutos_agregados": minutos_agregados,
+        "segundos_agregados": segundos,
         "saldo_nuevo": nuevo_saldo,
-        "unidad_saldo": "minutos"
+        "unidad_saldo": "segundos"
     }), 200
 
+
+
+
+
+
+
+
+
+
+@app.route("/api/profesor/quitar-saldo", methods=["POST"])
+@requiere_rol("profesor")
+def quitar_saldo():
+
+    # El tiempo viene en SEGUNDOS (la pantalla ya hizo la cuenta)
+    datos = request.get_json()
+
+    estudiante_id = datos.get("estudiante_id")
+    segundos = datos.get("segundos")
+
+    if estudiante_id is None:
+        return jsonify({"error": "El ID del estudiante es requerido"}), 400
+
+    if segundos is None:
+        return jsonify({"error": "Los segundos a quitar son requeridos"}), 400
+
+    try:
+        segundos = int(round(float(segundos)))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Los segundos deben ser un número"}), 400
+
+    if segundos <= 0:
+        return jsonify({"error": "Los segundos deben ser mayores a 0"}), 400
+
+    try:
+        token = obtener_token()
+    except Exception as e:
+        return jsonify({
+            "error": "Error de autenticación admin",
+            "detalle": str(e)
+        }), 500
+
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res_estudiante = requests.get(
+        f"{POCKETBASE_URL}/collections/Estudiantes/records/{estudiante_id}",
+        headers=headers
+    )
+
+    if res_estudiante.status_code != 200:
+        return jsonify({
+            "error": "Estudiante no encontrado",
+            "status_pocketbase": res_estudiante.status_code,
+            "detalle": res_estudiante.text
+        }), 404
+
+    saldo_actual = int(res_estudiante.json().get("saldo_segundos") or 0)
+
+    # Nunca baja de 0
+    nuevo_saldo = max(0, saldo_actual - segundos)
+
+    res_patch = requests.patch(
+        f"{POCKETBASE_URL}/collections/Estudiantes/records/{estudiante_id}",
+        json={"saldo_segundos": nuevo_saldo},
+        headers=headers
+    )
+
+    if res_patch.status_code != 200:
+        return jsonify({
+            "error": "No se pudo actualizar el saldo",
+            "status_pocketbase": res_patch.status_code,
+            "detalle": res_patch.text
+        }), 500
+
+    return jsonify({
+        "status": "éxito",
+        "estudiante_id": estudiante_id,
+        "saldo_anterior": saldo_actual,
+        "segundos_quitados": saldo_actual - nuevo_saldo,
+        "saldo_nuevo": nuevo_saldo,
+        "unidad_saldo": "segundos"
+    }), 200
 # ============================================================
 # EJECUTAR SERVIDOR
 # ============================================================
