@@ -1473,6 +1473,170 @@ def quitar_saldo():
         "saldo_nuevo": nuevo_saldo,
         "unidad_saldo": "segundos"
     }), 200
+
+
+
+# ============================================================
+# EDITAR DATOS DE UN ESTUDIANTE
+# SOLO PROFESORES
+# ============================================================
+
+@app.route("/api/profesor/editar-estudiante", methods=["PATCH"])
+@requiere_rol("profesor")
+def editar_estudiante():
+
+    datos = request.get_json() or {}
+
+    estudiante_id = datos.get("estudiante_id")
+    nombre = (datos.get("nombre") or "").strip()
+    apellido = (datos.get("apellido") or "").strip()
+    email = (datos.get("email") or "").strip()
+    password = datos.get("password") or ""   # opcional: solo si se quiere cambiar
+
+    # ========================================================
+    # 1. Validar datos
+    # ========================================================
+
+    if not estudiante_id:
+        return jsonify({"error": "El ID del estudiante es requerido"}), 400
+
+    if not nombre or not apellido or not email:
+        return jsonify({
+            "error": "Nombre, apellido y email son requeridos"
+        }), 400
+
+    # Evita caracteres que romperían las búsquedas en PocketBase
+    for valor in (nombre, apellido, email):
+        if '"' in valor or "\\" in valor:
+            return jsonify({
+                "error": "Los datos no pueden tener comillas ni barras"
+            }), 400
+
+    # ========================================================
+    # 2. Token de superusuario de PocketBase
+    # ========================================================
+
+    try:
+        token = obtener_token()
+    except Exception as e:
+        return jsonify({
+            "error": "Error de autenticación admin",
+            "detalle": str(e)
+        }), 500
+
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # ========================================================
+    # 3. Buscar al estudiante
+    # ========================================================
+
+    res_estudiante = requests.get(
+        f"{POCKETBASE_URL}/collections/Estudiantes/records/{estudiante_id}",
+        headers=headers
+    )
+
+    if res_estudiante.status_code != 200:
+        return jsonify({
+            "error": "Estudiante no encontrado",
+            "status_pocketbase": res_estudiante.status_code
+        }), 404
+
+    estudiante = res_estudiante.json()
+    persona_id = estudiante.get("id_personas")
+
+    if not persona_id:
+        return jsonify({
+            "error": "El estudiante no tiene una persona asociada"
+        }), 500
+
+    # ========================================================
+    # 4. Que el email no lo tenga otro estudiante
+    # ========================================================
+
+    res_email = requests.get(
+        f"{POCKETBASE_URL}/collections/Estudiantes/records",
+        params={"filter": f'email="{email}" && id!="{estudiante_id}"'},
+        headers=headers
+    )
+
+    if res_email.status_code == 200 and res_email.json().get("totalItems", 0) > 0:
+        return jsonify({
+            "error": "Ya existe un estudiante con ese email"
+        }), 400
+
+    # ========================================================
+    # 5. Que el nombre y apellido no los tenga otra persona
+    # ========================================================
+
+    res_persona_dup = requests.get(
+        f"{POCKETBASE_URL}/collections/Personas/records",
+        params={
+            "filter": (
+                f'nombre="{nombre}" && apellido="{apellido}" '
+                f'&& id!="{persona_id}"'
+            )
+        },
+        headers=headers
+    )
+
+    if res_persona_dup.status_code == 200 and res_persona_dup.json().get("totalItems", 0) > 0:
+        return jsonify({
+            "error": "Ya existe una persona con ese nombre y apellido"
+        }), 400
+
+    # ========================================================
+    # 6. Actualizar el estudiante (email y, si se pidió, contraseña)
+    # ========================================================
+
+    cambios_estudiante = {"email": email}
+
+    if password:
+        cambios_estudiante["password"] = generate_password_hash(password)
+
+    res_patch_est = requests.patch(
+        f"{POCKETBASE_URL}/collections/Estudiantes/records/{estudiante_id}",
+        json=cambios_estudiante,
+        headers=headers
+    )
+
+    if res_patch_est.status_code != 200:
+        return jsonify({
+            "error": "No se pudo actualizar el estudiante",
+            "status_pocketbase": res_patch_est.status_code,
+            "detalle": res_patch_est.text
+        }), 500
+
+    # ========================================================
+    # 7. Actualizar nombre y apellido (tabla Personas)
+    # ========================================================
+
+    res_patch_per = requests.patch(
+        f"{POCKETBASE_URL}/collections/Personas/records/{persona_id}",
+        json={"nombre": nombre, "apellido": apellido},
+        headers=headers
+    )
+
+    if res_patch_per.status_code != 200:
+        return jsonify({
+            "error": "Se actualizó el email pero no el nombre y apellido",
+            "status_pocketbase": res_patch_per.status_code,
+            "detalle": res_patch_per.text
+        }), 500
+
+    # ========================================================
+    # 8. Respuesta
+    # ========================================================
+
+    return jsonify({
+        "status": "éxito",
+        "estudiante": {
+            "id": estudiante_id,
+            "nombre": nombre,
+            "apellido": apellido,
+            "email": emailS
+        },
+        "contrasena_cambiada": bool(password)
+    }), 200
 # ============================================================
 # EJECUTAR SERVIDOR
 # ============================================================

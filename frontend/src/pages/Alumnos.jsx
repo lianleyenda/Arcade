@@ -86,6 +86,25 @@ function estiloOpcionModo(activo, color) {
   };
 }
 
+const estiloEditar = {
+  marginTop: 10,
+  padding: 0,
+  background: "none",
+  border: "none",
+  color: "#9aa0c8",
+  fontSize: 12,
+  cursor: "pointer",
+  textDecoration: "underline",
+  fontFamily: "'Orbitron', sans-serif",
+};
+
+const estiloCancelar = {
+  ...estilos.botonChico,
+  background: "transparent",
+  border: "1px solid #9aa0c8",
+  color: "#9aa0c8",
+};
+
 function Alumnos() {
   const [alumnos, setAlumnos] = useState([]);
   const [busqueda, setBusqueda] = useState("");
@@ -95,6 +114,9 @@ function Alumnos() {
   const [unidadPorAlumno, setUnidadPorAlumno] = useState({});
   const [modoPorAlumno, setModoPorAlumno] = useState({});
   const [mensajePorAlumno, setMensajePorAlumno] = useState({});
+  const [editandoId, setEditandoId] = useState(null);
+  const [formEdicion, setFormEdicion] = useState({ nombre: "", apellido: "", email: "", password: "" });
+  const [mensajeEdicion, setMensajeEdicion] = useState("");
 
   useEffect(() => {
     cargarAlumnos();
@@ -184,6 +206,77 @@ function Alumnos() {
       }
     } catch (e) {
       setMensajePorAlumno((prev) => ({ ...prev, [alumnoId]: "No se pudo conectar con el servidor" }));
+    }
+  }
+
+  function abrirEdicion(alumno) {
+    setEditandoId(alumno.id);
+    setFormEdicion({
+      nombre: alumno.nombre || "",
+      apellido: alumno.apellido || "",
+      email: alumno.email || "",
+      password: "",
+    });
+    setMensajeEdicion("");
+  }
+
+  function cerrarEdicion() {
+    setEditandoId(null);
+    setMensajeEdicion("");
+  }
+
+  async function guardarEdicion(alumnoId) {
+    const nombre = formEdicion.nombre.trim();
+    const apellido = formEdicion.apellido.trim();
+    const email = formEdicion.email.trim();
+
+    if (!nombre || !apellido || !email) {
+      setMensajeEdicion("Nombre, apellido y email son obligatorios");
+      return;
+    }
+
+    if (MODO_PRUEBA) {
+      setAlumnos((prev) =>
+        prev.map((a) => (a.id === alumnoId ? { ...a, nombre, apellido, email } : a))
+      );
+      setMensajePorAlumno((prev) => ({ ...prev, [alumnoId]: "Datos actualizados (prueba)" }));
+      cerrarEdicion();
+      return;
+    }
+
+    try {
+      const respuesta = await fetch(`${API_URL}/profesor/editar-estudiante`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${obtenerToken()}`,
+        },
+        body: JSON.stringify({
+          estudiante_id: alumnoId,
+          nombre,
+          apellido,
+          email,
+          password: formEdicion.password,
+        }),
+      });
+      const datos = await respuesta.json();
+
+      if (respuesta.ok) {
+        setAlumnos((prev) =>
+          prev.map((a) => (a.id === alumnoId ? { ...a, nombre, apellido, email } : a))
+        );
+        setMensajePorAlumno((prev) => ({
+          ...prev,
+          [alumnoId]: datos.contrasena_cambiada
+            ? "Datos y contraseña actualizados"
+            : "Datos actualizados",
+        }));
+        cerrarEdicion();
+      } else {
+        setMensajeEdicion(datos.error || "No se pudo guardar");
+      }
+    } catch (e) {
+      setMensajeEdicion("No se pudo conectar con el servidor");
     }
   }
 
@@ -285,6 +378,55 @@ function Alumnos() {
 
               {mensajePorAlumno[alumno.id] && (
                 <p style={estilos.mensajeChico}>{mensajePorAlumno[alumno.id]}</p>
+              )}
+
+              {editandoId === alumno.id ? (
+                <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid #3a2a6b" }}>
+                  <p style={{ margin: "0 0 8px", color: "#00fff2", fontSize: 13 }}>EDITAR DATOS</p>
+                  <input
+                    type="text"
+                    placeholder="Nombre"
+                    value={formEdicion.nombre}
+                    onChange={(e) => setFormEdicion((f) => ({ ...f, nombre: e.target.value }))}
+                    style={{ ...estilos.input, marginBottom: 8 }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Apellido"
+                    value={formEdicion.apellido}
+                    onChange={(e) => setFormEdicion((f) => ({ ...f, apellido: e.target.value }))}
+                    style={{ ...estilos.input, marginBottom: 8 }}
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={formEdicion.email}
+                    onChange={(e) => setFormEdicion((f) => ({ ...f, email: e.target.value }))}
+                    style={{ ...estilos.input, marginBottom: 8 }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Contraseña nueva (vacío = no cambiar)"
+                    value={formEdicion.password}
+                    onChange={(e) => setFormEdicion((f) => ({ ...f, password: e.target.value }))}
+                    style={{ ...estilos.input, marginBottom: 8 }}
+                  />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => guardarEdicion(alumno.id)} style={estilos.botonChico}>
+                      Guardar
+                    </button>
+                    <button onClick={cerrarEdicion} style={estiloCancelar}>
+                      Cancelar
+                    </button>
+                  </div>
+                  {mensajeEdicion && (
+                    <p style={{ ...estilos.mensajeChico, color: "#ff4d6d" }}>{mensajeEdicion}</p>
+                  )}
+                </div>
+              ) : (
+                <button onClick={() => abrirEdicion(alumno)} style={estiloEditar}>
+                  ✎ Editar datos
+                </button>
               )}
             </div>
           ))}
