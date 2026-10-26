@@ -9,9 +9,9 @@ const MODO_PRUEBA = false;
 
 // En la base de datos el saldo se guarda en SEGUNDOS.
 const ALUMNOS_DE_PRUEBA = [
-  { id: "1", nombre: "Juan", apellido: "Pérez", saldo: 1200, ultima_fecha_uso: "2026-09-10" },
-  { id: "2", nombre: "María", apellido: "Gómez", saldo: 0, ultima_fecha_uso: "2026-08-01" },
-  { id: "3", nombre: "Lucas", apellido: "Fernández", saldo: 9900, ultima_fecha_uso: "Nunca" },
+  { id: "1", nombre: "Juan", apellido: "Pérez", email: "juan.perez@gmail.com", saldo: 1200, ultima_fecha_uso: "2026-09-10" },
+  { id: "2", nombre: "María", apellido: "Gómez", email: "maria.gomez@gmail.com", saldo: 0, ultima_fecha_uso: "2026-08-01" },
+  { id: "3", nombre: "Lucas", apellido: "Fernández", email: "lucas.f@gmail.com", saldo: 9900, ultima_fecha_uso: "Nunca" },
 ];
 
 // Cuántos segundos vale cada unidad
@@ -62,6 +62,30 @@ const estiloOpcion = {
   color: "#eef1ff",
 };
 
+const estiloSelector = {
+  display: "flex",
+  borderRadius: 10,
+  overflow: "hidden",
+  border: "1px solid #3a2a6b",
+  marginBottom: 10,
+};
+
+function estiloOpcionModo(activo, color) {
+  return {
+    flex: 1,
+    padding: "10px 8px",
+    border: "none",
+    cursor: "pointer",
+    fontFamily: "'Orbitron', sans-serif",
+    fontSize: 12,
+    fontWeight: "bold",
+    letterSpacing: 1,
+    background: activo ? color : "transparent",
+    color: activo ? "#05020f" : "#9aa0c8",
+    transition: "all 0.15s",
+  };
+}
+
 function Alumnos() {
   const [alumnos, setAlumnos] = useState([]);
   const [busqueda, setBusqueda] = useState("");
@@ -69,6 +93,7 @@ function Alumnos() {
   const [error, setError] = useState("");
   const [cantidadPorAlumno, setCantidadPorAlumno] = useState({});
   const [unidadPorAlumno, setUnidadPorAlumno] = useState({});
+  const [modoPorAlumno, setModoPorAlumno] = useState({});
   const [mensajePorAlumno, setMensajePorAlumno] = useState({});
 
   useEffect(() => {
@@ -194,43 +219,69 @@ function Alumnos() {
               <p style={{ margin: 0, fontWeight: "bold", color: "#fff" }}>
                 {alumno.nombre} {alumno.apellido}
               </p>
+              <p style={{ margin: "2px 0 0", color: "#00fff2", fontSize: 13, wordBreak: "break-all" }}>
+                {alumno.email || "Sin email"}
+              </p>
               <p style={{ margin: "4px 0 12px", color: "#9aa0c8", fontSize: 14 }}>
                 Saldo: {formatearTiempo(alumno.saldo)} · Último uso: {alumno.ultima_fecha_uso}
               </p>
 
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  placeholder="Tiempo"
-                  value={cantidadPorAlumno[alumno.id] || ""}
-                  onChange={(e) =>
-                    setCantidadPorAlumno((prev) => ({ ...prev, [alumno.id]: e.target.value }))
-                  }
-                  style={estiloCantidad}
-                />
-                <select
-                  value={unidadPorAlumno[alumno.id] || "minutos"}
-                  onChange={(e) =>
-                    setUnidadPorAlumno((prev) => ({ ...prev, [alumno.id]: e.target.value }))
-                  }
-                  style={estiloUnidad}
-                >
-                  <option value="segundos" style={estiloOpcion}>segundos</option>
-                  <option value="minutos" style={estiloOpcion}>minutos</option>
-                  <option value="horas" style={estiloOpcion}>horas</option>
-                </select>
-                <button onClick={() => modificarTiempo(alumno.id, "asignar")} style={estilos.botonChico}>
-                  Asignar
-                </button>
-                <button
-                  onClick={() => modificarTiempo(alumno.id, "quitar")}
-                  style={{ ...estilos.botonChico, borderColor: "#ff4d6d", color: "#ff4d6d" }}
-                >
-                  Quitar
-                </button>
-              </div>
+              {(() => {
+                const modo = modoPorAlumno[alumno.id] || "asignar";
+                const quitando = modo === "quitar";
+                return (
+                  <>
+                    <div style={estiloSelector}>
+                      <button
+                        onClick={() => setModoPorAlumno((prev) => ({ ...prev, [alumno.id]: "asignar" }))}
+                        style={estiloOpcionModo(!quitando, "#00ff9d")}
+                      >
+                        + ASIGNAR
+                      </button>
+                      <button
+                        onClick={() => setModoPorAlumno((prev) => ({ ...prev, [alumno.id]: "quitar" }))}
+                        style={estiloOpcionModo(quitando, "#ff4d6d")}
+                      >
+                        − QUITAR
+                      </button>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        placeholder="Tiempo"
+                        value={cantidadPorAlumno[alumno.id] || ""}
+                        onChange={(e) =>
+                          setCantidadPorAlumno((prev) => ({ ...prev, [alumno.id]: e.target.value }))
+                        }
+                        style={estiloCantidad}
+                      />
+                      <select
+                        value={unidadPorAlumno[alumno.id] || "minutos"}
+                        onChange={(e) =>
+                          setUnidadPorAlumno((prev) => ({ ...prev, [alumno.id]: e.target.value }))
+                        }
+                        style={estiloUnidad}
+                      >
+                        <option value="segundos" style={estiloOpcion}>segundos</option>
+                        <option value="minutos" style={estiloOpcion}>minutos</option>
+                        <option value="horas" style={estiloOpcion}>horas</option>
+                      </select>
+                      <button
+                        onClick={() => modificarTiempo(alumno.id, modo)}
+                        style={{
+                          ...estilos.botonChico,
+                          background: quitando ? "#ff4d6d" : "#00ff9d",
+                        }}
+                      >
+                        {quitando ? "Quitar" : "Asignar"}
+                      </button>
+                    </div>
+                  </>
+                );
+              })()}
 
               {mensajePorAlumno[alumno.id] && (
                 <p style={estilos.mensajeChico}>{mensajePorAlumno[alumno.id]}</p>

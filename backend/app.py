@@ -1212,6 +1212,8 @@ def obtener_estudiantes_saldo():
                 ""
             ),
 
+            "email": est.get("email", ""),
+
             "saldo": saldo,
 
             "ultima_fecha_uso": est.get(
@@ -1477,7 +1479,8 @@ def quitar_saldo():
 
 if __name__ == "__main__":
 
-    app.run(
+       app.run(
+        host="0.0.0.0",
         debug=True,
         port=5000
     )
