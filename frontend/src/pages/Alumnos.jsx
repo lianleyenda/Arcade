@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { FondoArcade, estilos } from "./EstilosArcade";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "http://10.56.31.32:5000/api";
 
 // Modo de prueba: usa esta lista en vez de pedirle los datos al backend.
 // Poner en false cuando el backend esté corriendo de verdad.
