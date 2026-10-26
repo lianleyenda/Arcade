@@ -1633,7 +1633,7 @@ def editar_estudiante():
             "id": estudiante_id,
             "nombre": nombre,
             "apellido": apellido,
-            "email": emailS
+            "email": email
         },
         "contrasena_cambiada": bool(password)
     }), 200
