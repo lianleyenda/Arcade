@@ -1,0 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Orbitron:wght@500;600;700;800;900&display=swap');
+
+.arcade-shell { --bg-top: #0e0622; --bg-bottom: #04020e; --cyan: #00e5ff; --pink: #ff2ec4; --violet: #8c5aff; --text: #eef1ff; --muted: #8287af; --green: #00ff9d; --red: #ff4d6d; }
+/* Reseteo propio (lo que hacía Tailwind en v0), limitado a estas pantallas */
+.arcade-shell *, .arcade-shell *::before, .arcade-shell *::after { box-sizing: border-box; margin: 0; padding: 0; border: 0 solid; }
+.arcade-shell { color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 16px; line-height: normal; letter-spacing: normal; font-weight: 400; text-align: left; }
+.arcade-shell h1, .arcade-shell h2 { font-weight: 400; }
+.arcade-shell button, .arcade-shell input { font: inherit; letter-spacing: inherit; color: inherit; background: transparent; }
+.arcade-shell button { cursor: pointer; }
+.arcade-shell { min-height: 100vh; display:flex; align-items:center; justify-content:center; padding:28px 18px; position:relative; overflow:hidden; overflow:clip; background:linear-gradient(180deg,var(--bg-top),var(--bg-bottom)); }
+.arcade-shell::before { content:""; position:absolute; inset:0; opacity:.24; pointer-events:none; background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(164,126,255,.13) 4px 5px),linear-gradient(90deg,transparent 0 49.8%,rgba(140,90,255,.08) 50%,transparent 50.2%); }
+.arcade-shell::after { content:""; position:absolute; width:150%; height:42%; bottom:-22%; left:-25%; opacity:.26; transform:perspective(340px) rotateX(58deg); background-image:linear-gradient(rgba(140,90,255,.35) 1px,transparent 1px),linear-gradient(90deg,rgba(140,90,255,.35) 1px,transparent 1px); background-size:48px 28px; mask-image:linear-gradient(to bottom,transparent,black); }
+.arcade-shell .home-wrap, .arcade-shell .arcade-card { position:relative; z-index:1; }
+.arcade-shell .home-wrap { width:min(100%,620px); text-align:center; }
+.arcade-shell .brand-mark { color:var(--cyan); font-size:26px; height:44px; text-shadow:0 0 12px var(--cyan); }
+.arcade-shell .eyebrow { display:block; color:var(--cyan); font:700 11px/1 'Orbitron',sans-serif; letter-spacing:.22em; margin-bottom:18px; text-shadow:0 0 10px currentColor; }
+.arcade-shell .eyebrow.pink, .arcade-shell .pink .eyebrow { color:var(--pink); }
+.arcade-shell h1, .arcade-shell h2 { margin:0; font-family:'Orbitron',sans-serif; letter-spacing:.06em; line-height:1.12; }
+.arcade-shell h1 { font-size:clamp(38px,10vw,72px); color:var(--text); text-shadow:0 0 8px #fff, 0 0 24px var(--cyan); }
+.arcade-shell h1 em, .arcade-shell h2 em { color:var(--cyan); font-style:normal; text-shadow:0 0 8px var(--cyan), 0 0 22px var(--cyan); }
+.arcade-shell h2 { font-size:clamp(27px,7vw,40px); color:var(--text); text-shadow:0 0 8px currentColor; margin-bottom:18px; }
+.arcade-shell .pink h2 em, .arcade-shell h2 em.pink { color:var(--pink); text-shadow:0 0 8px var(--pink),0 0 22px var(--pink); }
+.arcade-shell .intro, .arcade-shell .card-copy { color:var(--muted); margin:18px 0 30px; font-size:15px; }
+.arcade-shell .choice-grid { display:grid; gap:14px; margin-top:36px; }
+.arcade-shell .choice-card { position:relative; min-height:126px; text-align:left; padding:25px 28px; color:var(--text); background:rgba(13,8,38,.78); border:1px solid currentColor; border-radius:13px; transition:transform .2s, box-shadow .2s; }
+.arcade-shell .choice-card:hover { transform:translateY(-3px); }
+.arcade-shell .choice-card.cyan { color:var(--cyan); box-shadow:0 0 24px rgba(0,229,255,.13), inset 0 0 22px rgba(0,229,255,.04); }
+.arcade-shell .choice-card.pink { color:var(--pink); box-shadow:0 0 24px rgba(255,46,196,.13), inset 0 0 22px rgba(255,46,196,.04); }
+.arcade-shell .choice-card strong, .arcade-shell .choice-card small { display:block; margin-left:42px; }
+.arcade-shell .choice-card strong { color:var(--text); font:700 17px 'Orbitron',sans-serif; letter-spacing:.04em; }
+.arcade-shell .choice-card small { color:var(--muted); margin-top:8px; font-size:14px; }
+.arcade-shell .choice-icon { position:absolute; top:25px; left:25px; font-size:25px; text-shadow:0 0 10px currentColor; }
+.arcade-shell .arrow { position:absolute; right:25px; top:50%; transform:translateY(-50%); font-size:24px; }
+.arcade-shell .version { margin-top:28px; color:#575579; font:600 10px 'Orbitron',sans-serif; letter-spacing:.2em; }.arcade-shell .version span { display:inline-block; width:6px; height:6px; margin-left:7px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); }
+.arcade-shell .arcade-card { width:min(100%,460px); padding:34px 32px 26px; background:rgba(10,6,30,.91); border:1px solid var(--cyan); border-radius:15px; box-shadow:0 0 35px rgba(0,229,255,.12), inset 0 0 24px rgba(0,229,255,.03); text-align:center; }
+.arcade-shell .arcade-card.pink { border-color:var(--pink); box-shadow:0 0 35px rgba(255,46,196,.14), inset 0 0 24px rgba(255,46,196,.04); }
+.arcade-shell .arcade-card form { text-align:left; }.arcade-shell .field { margin:0 0 17px; }.arcade-shell .field label, .arcade-shell form > label { display:block; color:var(--muted); font-size:13px; margin-bottom:7px; }
+.arcade-shell input { width:100%; height:50px; padding:0 14px; color:var(--text); background:#08051d; border:1px solid #363257; border-radius:7px; outline:none; font-size:16px; transition:border .2s,box-shadow .2s; }.arcade-shell input:focus { border-color:var(--cyan); box-shadow:0 0 12px rgba(0,229,255,.25); }.arcade-shell .pink input:focus { border-color:var(--pink); box-shadow:0 0 12px rgba(255,46,196,.25); }.arcade-shell input.has-error { border-color:var(--red); }
+.arcade-shell .name-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.arcade-shell .primary-button, .arcade-shell .outline-button { width:100%; min-height:50px; margin-top:9px; border-radius:7px; font:700 14px 'Orbitron',sans-serif; letter-spacing:.06em; transition:filter .2s,transform .2s; }.arcade-shell .primary-button { border:1px solid currentColor; color:#08051d; }.arcade-shell .primary-button.cyan { background:var(--cyan); box-shadow:0 0 18px rgba(0,229,255,.34); }.arcade-shell .primary-button.pink { background:var(--pink); box-shadow:0 0 18px rgba(255,46,196,.34); }.arcade-shell .outline-button { background:transparent; border:1px solid currentColor; }.arcade-shell .outline-button.cyan { color:var(--cyan); }.arcade-shell .outline-button.pink { color:var(--pink); }.arcade-shell .primary-button:hover,.arcade-shell .outline-button:hover { filter:brightness(1.18); transform:translateY(-1px); }.arcade-shell .primary-button:disabled { opacity:.6; cursor:wait; }.arcade-shell .primary-button span,.arcade-shell .outline-button span { float:right; font-size:20px; line-height:13px; }.arcade-shell .stack-buttons { display:grid; gap:13px; }.arcade-shell .back-link { display:block; margin:25px auto 0; padding:5px; border:0; background:transparent; color:var(--muted); font-size:13px; }.arcade-shell .back-link:hover { color:var(--text); }.arcade-shell .message { margin:4px 0 13px; padding:10px 12px; border-radius:6px; font-size:13px; text-align:left; }.arcade-shell .message.error { color:var(--red); border:1px solid rgba(255,77,109,.35); background:rgba(255,77,109,.08); }.arcade-shell .message.success { color:var(--green); border:1px solid rgba(0,255,157,.35); background:rgba(0,255,157,.08); }.arcade-shell .form-card { max-height:calc(100vh - 28px); overflow:auto; }
+@media (max-width:520px) { .arcade-shell { padding:20px 14px; align-items:center; }.arcade-shell .arcade-card { padding:29px 21px 23px; }.arcade-shell .name-row { grid-template-columns:1fr; gap:0; } }
+
+/* Margen a los costados de los botones, para que la flecha no quede pegada al borde */
+.arcade-shell .primary-button, .arcade-shell .outline-button { padding: 0 18px; }

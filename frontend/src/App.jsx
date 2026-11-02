@@ -1,72 +1,53 @@
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { useState } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Inicio from "./pages/Inicio";
 import Registro from "./pages/Registro";
+import RegistroProfesor from "./pages/RegistroProfesor";
+import Profesores from "./pages/Profesores";
 import Login from "./pages/Login";
 import Alumnos from "./pages/Alumnos";
-import RegistroProfesor from "./pages/RegistroProfesor";
-import { FondoArcade, estilos, colores } from "./pages/EstilosArcade";
+import ZonaRestringida from "./pages/ZonaRestringida";
 
-// Estilos de los dos botones de la pantalla de profesores
-const estiloBotonLink = {
-  ...estilos.boton,
-  display: "block",
-  boxSizing: "border-box",
-  textAlign: "center",
-  textDecoration: "none",
-  marginBottom: 16,
-};
+// Contraseña que pide la zona de profesores (cambiala por la que prefieras)
+const CONTRASENA_SECRETA = "arcade123";
 
-const estiloBotonLinkSecundario = {
-  ...estiloBotonLink,
-  background: "transparent",
-  color: colores.acento,
-  border: `2px solid ${colores.acento}`,
-  marginBottom: 0,
-};
-
-function Inicio() {
-  return (
-    <div>
-      <h1>Arcade - Panel</h1>
-      <p>
-        <Link to="/registro">Ir a registro</Link>
-      </p>
-      <p>
-        <Link to="/profesores">Ir a profesores</Link>
-      </p>
-    </div>
+// Protege una pantalla: pide la contraseña una sola vez por pestaña
+function RutaProtegida({ children }) {
+  const [autorizado, setAutorizado] = useState(
+    () => sessionStorage.getItem("arcade_profesores_auth") === "true"
   );
+
+  function ingresar(contrasena) {
+    if (contrasena !== CONTRASENA_SECRETA) return false;
+    sessionStorage.setItem("arcade_profesores_auth", "true");
+    setAutorizado(true);
+    return true;
+  }
+
+  if (!autorizado) return <ZonaRestringida alIngresar={ingresar} />;
+  return children;
 }
 
-function Profesores() {
+export function Rutas() {
   return (
-    <FondoArcade>
-      <div style={estilos.contenedor}>
-        <h1 style={estilos.titulo}>PROFESORES</h1>
+    <Routes>
+      {/* Rutas públicas */}
+      <Route path="/" element={<Inicio />} />
+      <Route path="/registro" element={<Registro />} />
+      <Route path="/alumnos" element={<Alumnos />} />
 
-        <div style={estilos.tarjeta}>
-          <Link to="/login" style={estiloBotonLink}>
-            INICIAR SESIÓN
-          </Link>
-          <Link to="/registro-profesor" style={estiloBotonLinkSecundario}>
-            REGISTRARME
-          </Link>
-        </div>
-      </div>
-    </FondoArcade>
+      {/* Rutas de profesores (piden la contraseña de la zona restringida) */}
+      <Route path="/profesores" element={<RutaProtegida><Profesores /></RutaProtegida>} />
+      <Route path="/login" element={<RutaProtegida><Login /></RutaProtegida>} />
+      <Route path="/registro-profesor" element={<RutaProtegida><RegistroProfesor /></RutaProtegida>} />
+    </Routes>
   );
 }
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Inicio />} />
-        <Route path="/registro" element={<Registro />} />
-        <Route path="/profesores" element={<Profesores />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/alumnos" element={<Alumnos />} />
-        <Route path="/registro-profesor" element={<RegistroProfesor />} />
-      </Routes>
+      <Rutas />
     </BrowserRouter>
   );
 }

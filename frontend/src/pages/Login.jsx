@@ -1,98 +1,65 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FondoArcade, estilos } from "./EstilosArcade";
+import { FondoArcade, Etiqueta, Tarjeta, EnlaceVolver, Campo } from "./ComponentesArcade";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "http://10.56.31.32:5000/api";
 
-// Modo de prueba: no se conecta al backend, cualquier email/contraseña
-// entra. Poner en false cuando el backend esté corriendo de verdad.
-const MODO_PRUEBA = false;
+// Devuelve true si entró bien, o un texto con el error.
+async function iniciarSesionProfesor(email, password) {
+  try {
+    const respuesta = await fetch(`${API_URL}/iniciar-sesion/profesores`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const datos = await respuesta.json();
+
+    if (respuesta.ok) {
+      localStorage.setItem("profesor", JSON.stringify(datos.usuario));
+      localStorage.setItem("token_profesor", datos.token);
+      return true;
+    }
+    return datos.error || "No se pudo iniciar sesión";
+  } catch (e) {
+    return "No se pudo conectar con el servidor";
+  }
+}
 
 function Login() {
+  const navegar = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [mensaje, setMensaje] = useState("");
+  const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
-  const navegar = useNavigate();
 
-  async function manejarEnvio(evento) {
+  async function enviar(evento) {
     evento.preventDefault();
-    setMensaje("");
+    setError("");
     setEnviando(true);
+    const resultado = await iniciarSesionProfesor(email.trim(), password);
+    setEnviando(false);
 
-    if (MODO_PRUEBA) {
-      // Simula un login exitoso, sin backend
-      localStorage.setItem(
-        "profesor",
-        JSON.stringify({ email, nombre: "Profesor", apellido: "de prueba" })
-      );
-      setEnviando(false);
-      navegar("/alumnos");
-      return;
-    }
-
-    try {
-      const respuesta = await fetch(`${API_URL}/iniciar-sesion/profesores`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const datos = await respuesta.json();
-
-      if (respuesta.ok) {
-        localStorage.setItem("profesor", JSON.stringify(datos.usuario));
-        localStorage.setItem("token_profesor", datos.token);
-        navegar("/alumnos");
-      } else {
-        setMensaje(datos.error || "No se pudo iniciar sesión");
-      }
-    } catch (error) {
-      setMensaje("No se pudo conectar con el servidor");
-    } finally {
-      setEnviando(false);
-    }
+    if (resultado === true) navegar("/alumnos");
+    else setError(resultado);
   }
 
   return (
     <FondoArcade>
-      <div style={estilos.contenedor}>
-        <h1 style={estilos.titulo}>LOGIN PROFESOR</h1>
+      <Tarjeta tono="pink">
+        <Etiqueta tono="pink">ACCESO DOCENTE</Etiqueta>
+        <h2>LOGIN<br /><em>PROFESOR</em></h2>
 
-        {MODO_PRUEBA && (
-          <p style={estilos.aviso}>
-            Modo prueba activo: cualquier email/contraseña te deja entrar.
-          </p>
-        )}
+        <form onSubmit={enviar}>
+          <Campo label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" />
+          <Campo label="Contraseña" type="password" value={password} onChange={setPassword} autoComplete="current-password" />
+          {error && <p className="message error">{error}</p>}
+          <button className="primary-button pink" disabled={enviando}>
+            {enviando ? "INGRESANDO..." : "INGRESAR"} <span>→</span>
+          </button>
+        </form>
 
-        <div style={estilos.tarjeta}>
-          <form onSubmit={manejarEnvio}>
-            <label style={estilos.label}>Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={estilos.input}
-            />
-
-            <label style={estilos.label}>Contraseña</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={estilos.input}
-            />
-
-            <button type="submit" disabled={enviando} style={estilos.boton}>
-              {enviando ? "INGRESANDO..." : "INGRESAR"}
-            </button>
-          </form>
-        </div>
-
-        {mensaje && <p style={estilos.mensajeError}>{mensaje}</p>}
-      </div>
+        <EnlaceVolver a="/profesores" texto="← Volver" />
+      </Tarjeta>
     </FondoArcade>
   );
 }
